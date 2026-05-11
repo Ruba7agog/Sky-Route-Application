@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkyRoute — Flight Reservation System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Source+Code+Pro:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #111;
+    --white: #fafafa;
+    --gray-100: #f4f4f4;
+    --gray-200: #e8e8e8;
+    --gray-400: #aaa;
+    --gray-600: #666;
+    --gray-800: #333;
+    --accent: #111;
+    --border: 1px solid #ddd;
+    --radius: 4px;
+    --font-serif: 'IM Fell English', Georgia, serif;
+    --font-mono: 'Source Code Pro', monospace;
+  }
+
+  body {
+    font-family: var(--font-serif);
+    background: var(--white);
+    color: var(--black);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 2px solid var(--black);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    background: var(--white);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 1.4rem;
+    font-weight: normal;
+    letter-spacing: -0.02em;
+  }
+  .logo span { font-style: italic; }
+  .status-badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 3px 10px;
+    border: 1px solid var(--black);
+    border-radius: 20px;
+    cursor: pointer;
+  }
+  .status-badge.connected { border-color: #111; background: #111; color: #fff; }
+  .status-badge.error { border-color: #c00; color: #c00; }
+
+  /* ── Layout ── */
+  .shell { display: flex; flex: 1; }
+
+  nav {
+    width: 200px;
+    min-width: 200px;
+    border-right: var(--border);
+    padding: 1.5rem 0;
+    background: var(--white);
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+  .nav-section { margin-bottom: 1.5rem; }
+  .nav-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--gray-400);
+    padding: 0 1.2rem;
+    margin-bottom: 0.4rem;
+  }
+  nav a {
+    display: block;
+    padding: 0.45rem 1.2rem;
+    font-family: var(--font-serif);
+    font-size: 0.92rem;
+    color: var(--gray-600);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  nav a:hover, nav a.active {
+    color: var(--black);
+    border-left-color: var(--black);
+    background: var(--gray-100);
+  }
+
+  main { flex: 1; padding: 2rem 2.5rem; max-width: 1100px; }
+
+  /* ── Page sections ── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: normal;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.3rem;
+  }
+  h1 em { font-style: italic; color: var(--gray-600); }
+  .subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--gray-400);
+    margin-bottom: 1.8rem;
+    letter-spacing: 0.05em;
+  }
+  h2 {
+    font-size: 1.1rem;
+    font-weight: normal;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: var(--border);
+  }
+
+  /* ── Forms ── */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.2rem;
+    background: var(--gray-100);
+    border: var(--border);
+    border-radius: var(--radius);
+    align-items: flex-end;
+  }
+  .field { display: flex; flex-direction: column; gap: 0.25rem; }
+  label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gray-600);
+  }
+  input, select {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 0.45rem 0.7rem;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--white);
+    color: var(--black);
+    min-width: 140px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: var(--black); }
+
+  /* ── Buttons ── */
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.5rem 1.2rem;
+    border: 1px solid var(--black);
+    border-radius: var(--radius);
+    background: var(--black);
+    color: var(--white);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--gray-800); }
+  .btn.outline { background: transparent; color: var(--black); }
+  .btn.outline:hover { background: var(--gray-100); }
+  .btn.danger { border-color: #c00; background: #c00; }
+  .btn.success { border-color: #060; background: #060; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; border: var(--border); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    text-align: left;
+    padding: 0.7rem 0.9rem;
+    background: var(--black);
+    color: var(--white);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-100); }
+  tbody td { padding: 0.65rem 0.9rem; color: var(--gray-800); }
+  tbody td:first-child { font-family: var(--font-mono); font-size: 0.78rem; }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .badge-confirmed { border-color: #060; color: #060; background: #efffef; }
+  .badge-pending   { border-color: #770; color: #770; background: #fffbe6; }
+  .badge-cancelled { border-color: #c00; color: #c00; background: #fff0f0; }
+  .badge-approved  { border-color: #060; color: #060; background: #efffef; }
+  .badge-declined  { border-color: #c00; color: #c00; background: #fff0f0; }
+  .badge-refunded  { border-color: #558; color: #558; background: #f0f0ff; }
+  .badge-available { border-color: #060; color: #060; background: #efffef; }
+  .badge-occupied  { border-color: #c00; color: #c00; background: #fff0f0; }
+  .badge-economy   { border-color: #aaa; color: #666; }
+  .badge-business  { border-color: #336; color: #336; background: #f0f0ff; }
+  .badge-first     { border-color: #630; color: #630; background: #fff8f0; }
+
+  /* ── Messages ── */
+  .msg {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius);
+    margin: 1rem 0;
+    border: 1px solid;
+  }
+  .msg-ok    { border-color: #060; color: #060; background: #efffef; }
+  .msg-error { border-color: #c00; color: #c00; background: #fff0f0; }
+  .msg-info  { border-color: #aaa; color: #555; background: var(--gray-100); }
+
+  .empty { font-family: var(--font-mono); font-size: 0.8rem; color: var(--gray-400); padding: 2rem; text-align: center; }
+  .row-count { font-family: var(--font-mono); font-size: 0.7rem; color: var(--gray-400); margin: 0.6rem 0 0; }
+
+  /* ── Modal ── */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border: 2px solid var(--black);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: 480px;
+    max-width: 95vw;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 1.3rem; margin-bottom: 1.2rem; border: none; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1.2rem; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .modal-footer { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1rem; }
+
+  /* ── Dashboard cards ── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .card {
+    border: var(--border);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.4rem;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .card:hover { border-color: var(--black); transform: translateY(-1px); }
+  .card-num { font-size: 2rem; font-family: var(--font-mono); font-weight: 600; line-height: 1; margin-bottom: 0.3rem; }
+  .card-label { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); }
+
+  /* ── Loader ── */
+  .loader {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    padding: 1.5rem;
+    text-align: center;
+    letter-spacing: 0.1em;
+  }
+  .loader::after { content: ''; animation: dots 1.2s infinite; }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
+
+  /* ── Seat map ── */
+  .seat-map { display: flex; flex-wrap: wrap; gap: 6px; margin: 1rem 0; }
+  .seat-btn {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    width: 44px; height: 36px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+  .seat-btn.available:hover { border-color: var(--black); background: var(--black); color: var(--white); }
+  .seat-btn.occupied { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; border-color: var(--gray-200); }
+  .seat-btn.selected { background: var(--black); color: var(--white); border-color: var(--black); }
+  .seat-class-label { font-size: 0.55rem; }
+
+  @media (max-width: 768px) {
+    nav { display: none; }
+    main { padding: 1rem; }
+    .form-grid { grid-template-columns: 1fr; }
+    .cards { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Sky<span>Route</span></div>
+  <div style="display:flex;gap:0.8rem;align-items:center">
+    <span id="db-status" class="status-badge" onclick="checkHealth()">Checking DB…</span>
+    <button class="btn outline" onclick="showPage('home')">Home</button>
+  </div>
+</header>
+
+<div class="shell">
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <a href="#" onclick="showPage('home')">Dashboard</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Queries</div>
+      <a href="#" onclick="showPage('flights')">Search Flights</a>
+      <a href="#" onclick="showPage('reservations')">Reservations</a>
+      <a href="#" onclick="showPage('customers')">Customers</a>
+      <a href="#" onclick="showPage('passengers')">Passengers</a>
+      <a href="#" onclick="showPage('seats')">Seat Availability</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Reports</div>
+      <a href="#" onclick="showPage('routes')">Route Summary</a>
+      <a href="#" onclick="showPage('topflights')">Top Flights</a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Modify</div>
+      <a href="#" onclick="showPage('new-customer')">New Customer</a>
+      <a href="#" onclick="showPage('new-reservation')">New Reservation</a>
+      <a href="#" onclick="showPage('issue-ticket')">Issue Ticket</a>
+      <a href="#" onclick="showPage('process-payment')">Process Payment</a>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ── DASHBOARD ── -->
+    <div id="page-home" class="page active">
+      <h1>SkyRoute <em>Dashboard</em></h1>
+      <p class="subtitle">CS431 DATABASE ARCHITECTURE — RUBA HAGOG</p>
+      <div id="dash-cards" class="cards"><div class="loader">Loading</div></div>
+      <h2>Recent Reservations</h2>
+      <div id="dash-res"></div>
+    </div>
+
+    <!-- ── FLIGHTS ── -->
+    <div id="page-flights" class="page">
+      <h1>Search <em>Flights</em></h1>
+      <p class="subtitle">QUERY: FLIGHT + AIRLINE + AIRPORT + AIRCRAFT</p>
+      <div class="filter-bar">
+        <div class="field">
+          <label>Origin Airport</label>
+          <select id="fl-origin"><option value="">All Origins</option></select>
+        </div>
+        <div class="field">
+          <label>Destination Airport</label>
+          <select id="fl-dest"><option value="">All Destinations</option></select>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="fl-date">
+        </div>
+        <button class="btn" onclick="loadFlights()">Search</button>
+        <button class="btn outline" onclick="clearFlights()">Clear</button>
+      </div>
+      <div id="flights-result"></div>
+    </div>
+
+    <!-- ── RESERVATIONS ── -->
+    <div id="page-reservations" class="page">
+      <h1><em>Reservations</em></h1>
+      <p class="subtitle">QUERY: RESERVATION + CUSTOMER + TICKET AGGREGATION</p>
+      <div class="filter-bar">
+        <div class="field">
+          <label>Customer ID</label>
+          <input type="number" id="res-cust" placeholder="e.g. 1">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="res-status">
+            <option value="">All</option>
+            <option>Confirmed</option>
+            <option>Pending</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <button class="btn" onclick="loadReservations()">Search</button>
+        <button class="btn outline" onclick="document.getElementById('res-cust').value='';document.getElementById('res-status').value='';loadReservations()">Clear</button>
+      </div>
+      <div id="res-result"></div>
+    </div>
+
+    <!-- ── CUSTOMERS ── -->
+    <div id="page-customers" class="page">
+      <h1><em>Customers</em></h1>
+      <p class="subtitle">QUERY: CUSTOMER TABLE</p>
+      <div class="filter-bar">
+        <div class="field">
+          <label>Search</label>
+          <input type="text" id="cust-search" placeholder="Name or email…">
+        </div>
+        <button class="btn" onclick="loadCustomers()">Search</button>
+        <button class="btn outline" onclick="document.getElementById('cust-search').value='';loadCustomers()">Clear</button>
+      </div>
+      <div id="cust-result"></div>
+    </div>
+
+    <!-- ── PASSENGERS ── -->
+    <div id="page-passengers" class="page">
+      <h1><em>Passengers</em></h1>
+      <p class="subtitle">QUERY: PASSENGER TABLE</p>
+      <div class="filter-bar">
+        <div class="field">
+          <label>Search</label>
+          <input type="text" id="pass-search" placeholder="Name or passport…">
+        </div>
+        <div class="field">
+          <label>Passenger ID (for history)</label>
+          <input type="number" id="pass-id" placeholder="e.g. 1">
+        </div>
+        <button class="btn" onclick="loadPassengers()">Search</button>
+        <button class="btn outline" onclick="loadPassengerHistory()">View History</button>
+      </div>
+      <div id="pass-result"></div>
+    </div>
+
+    <!-- ── SEATS ── -->
+    <div id="page-seats" class="page">
+      <h1>Seat <em>Availability</em></h1>
+      <p class="subtitle">QUERY: SEAT + TICKET JOIN — AVAILABILITY PER FLIGHT</p>
+      <div class="filter-bar">
+        <div class="field">
+          <label>Flight ID</label>
+          <input type="number" id="seat-flight-id" placeholder="e.g. 1">
+        </div>
+        <button class="btn" onclick="loadSeats()">Load Seats</button>
+      </div>
+      <div id="seats-legend" style="display:none;margin-bottom:1rem;font-family:var(--font-mono);font-size:0.75rem;color:var(--gray-600)">
+        <span style="display:inline-block;width:12px;height:12px;background:#111;border-radius:2px;margin-right:5px;vertical-align:middle"></span>Available &nbsp;
+        <span style="display:inline-block;width:12px;height:12px;background:#e8e8e8;border-radius:2px;margin-right:5px;vertical-align:middle"></span>Occupied
+      </div>
+      <div id="seats-result"></div>
+    </div>
+
+    <!-- ── ROUTES ── -->
+    <div id="page-routes" class="page">
+      <h1>Route <em>Summary</em></h1>
+      <p class="subtitle">REPORT: FLIGHTS GROUPED BY AIRLINE + ROUTE WITH PRICE STATS</p>
+      <button class="btn" onclick="loadRoutes()" style="margin-bottom:1.5rem">Load Report</button>
+      <div id="routes-result"></div>
+    </div>
+
+    <!-- ── TOP FLIGHTS ── -->
+    <div id="page-topflights" class="page">
+      <h1>Top <em>Flights</em></h1>
+      <p class="subtitle">REPORT: TOP 10 FLIGHTS BY TICKETS SOLD + REVENUE</p>
+      <button class="btn" onclick="loadTopFlights()" style="margin-bottom:1.5rem">Load Report</button>
+      <div id="top-result"></div>
+    </div>
+
+    <!-- ── NEW CUSTOMER ── -->
+    <div id="page-new-customer" class="page">
+      <h1>Register <em>Customer</em></h1>
+      <p class="subtitle">INSERT INTO CUSTOMER</p>
+      <div id="cust-msg"></div>
+      <div class="form-grid" style="max-width:560px">
+        <div class="field"><label>First Name *</label><input id="nc-fn" placeholder="First"></div>
+        <div class="field"><label>Last Name *</label><input id="nc-ln" placeholder="Last"></div>
+        <div class="field full"><label>Email *</label><input id="nc-email" type="email" placeholder="email@example.com"></div>
+        <div class="field"><label>Phone</label><input id="nc-phone" placeholder="555-000-0000"></div>
+        <div class="field"><label>Date of Birth</label><input id="nc-dob" type="date"></div>
+        <div class="field full"><label>Street</label><input id="nc-street" placeholder="123 Main St"></div>
+        <div class="field"><label>City</label><input id="nc-city" placeholder="City"></div>
+        <div class="field"><label>State</label><input id="nc-state" placeholder="CA" maxlength="2"></div>
+        <div class="field"><label>Zip</label><input id="nc-zip" placeholder="00000"></div>
+      </div>
+      <div style="display:flex;gap:0.6rem">
+        <button class="btn" onclick="registerCustomer()">Register Customer</button>
+        <button class="btn outline" onclick="clearCustomerForm()">Clear</button>
+      </div>
+    </div>
+
+    <!-- ── NEW RESERVATION ── -->
+    <div id="page-new-reservation" class="page">
+      <h1>New <em>Reservation</em></h1>
+      <p class="subtitle">INSERT INTO RESERVATION</p>
+      <div id="res-msg"></div>
+      <div style="max-width:400px">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Customer ID *</label>
+            <input id="nr-cid" type="number" placeholder="Enter customer ID">
+          </div>
+        </div>
+        <div style="display:flex;gap:0.6rem">
+          <button class="btn" onclick="createReservation()">Create Reservation</button>
+          <button class="btn outline" onclick="document.getElementById('nr-cid').value=''">Clear</button>
+        </div>
+        <br>
+        <h2>Update Reservation Status</h2>
+        <div id="update-res-msg"></div>
+        <div class="form-grid">
+          <div class="field"><label>Reservation ID *</label><input id="ur-id" type="number" placeholder="ID"></div>
+          <div class="field">
+            <label>New Status *</label>
+            <select id="ur-status">
+              <option>Confirmed</option>
+              <option>Pending</option>
+              <option>Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" onclick="updateReservation()">Update Status</button>
+      </div>
+    </div>
+
+    <!-- ── ISSUE TICKET ── -->
+    <div id="page-issue-ticket" class="page">
+      <h1>Issue <em>Ticket</em></h1>
+      <p class="subtitle">INSERT INTO TICKET</p>
+      <div id="ticket-msg"></div>
+      <div style="max-width:480px">
+        <div class="form-grid">
+          <div class="field"><label>Passenger ID *</label><input id="it-pid" type="number" placeholder="Passenger ID"></div>
+          <div class="field"><label>Reservation ID *</label><input id="it-rid" type="number" placeholder="Reservation ID"></div>
+          <div class="field"><label>Flight ID *</label><input id="it-fid" type="number" placeholder="Flight ID"></div>
+          <div class="field"><label>Seat ID (optional)</label><input id="it-sid" type="number" placeholder="Seat ID"></div>
+          <div class="field">
+            <label>Fare Class</label>
+            <select id="it-fare">
+              <option value="">Select…</option>
+              <option>Economy</option>
+              <option>Business</option>
+              <option>First</option>
+            </select>
+          </div>
+          <div class="field"><label>Price *</label><input id="it-price" type="number" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div style="display:flex;gap:0.6rem">
+          <button class="btn" onclick="issueTicket()">Issue Ticket</button>
+          <button class="btn outline" onclick="clearTicketForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROCESS PAYMENT ── -->
+    <div id="page-process-payment" class="page">
+      <h1>Process <em>Payment</em></h1>
+      <p class="subtitle">INSERT INTO PAYMENT + UPDATE RESERVATION STATUS</p>
+      <div id="pay-msg"></div>
+      <div style="max-width:480px">
+        <div class="form-grid">
+          <div class="field"><label>Reservation ID *</label><input id="pp-rid" type="number" placeholder="Reservation ID"></div>
+          <div class="field"><label>Card ID *</label><input id="pp-cid" type="number" placeholder="Card ID"></div>
+          <div class="field full"><label>Amount *</label><input id="pp-amt" type="number" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div style="display:flex;gap:0.6rem">
+          <button class="btn success" onclick="processPayment()">Process Payment</button>
+          <button class="btn outline" onclick="clearPaymentForm()">Clear</button>
+        </div>
+        <br>
+        <h2>Update Payment Status (Refund)</h2>
+        <div id="refund-msg"></div>
+        <div class="form-grid">
+          <div class="field"><label>Payment ID *</label><input id="up-pid" type="number" placeholder="Payment ID"></div>
+          <div class="field">
+            <label>Status *</label>
+            <select id="up-status">
+              <option>Approved</option>
+              <option>Declined</option>
+              <option>Refunded</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn danger" onclick="updatePayment()">Update Payment</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:3000/api';
+let airports = [];
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const links = document.querySelectorAll('nav a');
+  links.forEach(a => { if(a.getAttribute('onclick') && a.getAttribute('onclick').includes("'"+name+"'")) a.classList.add('active'); });
+  // Auto-load certain pages
+  if (name === 'home') loadDashboard();
+  if (name === 'routes') loadRoutes();
+  if (name === 'topflights') loadTopFlights();
+  if (name === 'reservations') loadReservations();
+  if (name === 'customers') loadCustomers();
+  if (name === 'passengers') loadPassengers();
+}
+
+// ── Health check ───────────────────────────────────────────────────────────
+async function checkHealth() {
+  const el = document.getElementById('db-status');
+  try {
+    const r = await fetch(API + '/health');
+    const d = await r.json();
+    if (d.status === 'connected') {
+      el.textContent = '● DB Connected';
+      el.className = 'status-badge connected';
+    } else throw new Error(d.message);
+  } catch(e) {
+    el.textContent = '✕ DB Error';
+    el.className = 'status-badge error';
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtMoney(v) { return v != null ? '$' + parseFloat(v).toFixed(2) : '—'; }
+function fmtDate(v) { if(!v) return '—'; return new Date(v).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtDateTime(v) { if(!v) return '—'; return new Date(v).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+function badge(text) {
+  if(!text) return '—';
+  const cls = 'badge badge-' + text.toLowerCase().replace('/','');
+  return `<span class="${cls}">${text}</span>`;
+}
+
+function showMsg(id, text, type='info') {
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.innerHTML = `<div class="msg msg-${type}">${text}</div>`;
+  setTimeout(() => { if(el) el.innerHTML = ''; }, 5000);
+}
+
+function tableWrap(html, count) {
+  return `<div class="table-wrap">${html}</div><p class="row-count">${count} row${count!==1?'s':''} returned</p>`;
+}
+
+// ── Airports (cached) ──────────────────────────────────────────────────────
+async function loadAirports() {
+  if (airports.length) return;
+  try {
+    const r = await fetch(API + '/airports');
+    const d = await r.json();
+    airports = d.data || [];
+    ['fl-origin','fl-dest'].forEach(id => {
+      const sel = document.getElementById(id);
+      airports.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.airport_code;
+        opt.textContent = `${a.airport_code} — ${a.city}`;
+        sel.appendChild(opt);
+      });
+    });
+  } catch(e) {}
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  const cards = document.getElementById('dash-cards');
+  cards.innerHTML = '<div class="loader">Loading</div>';
+  try {
+    const [res, cust, fly, pass] = await Promise.all([
+      fetch(API+'/reservations').then(r=>r.json()),
+      fetch(API+'/customers').then(r=>r.json()),
+      fetch(API+'/flights').then(r=>r.json()),
+      fetch(API+'/passengers').then(r=>r.json()),
+    ]);
+    const resData = res.data||[];
+    const confirmed = resData.filter(r=>r.status==='Confirmed').length;
+    cards.innerHTML = `
+      <div class="card" onclick="showPage('flights')">
+        <div class="card-num">${(fly.data||[]).length}</div>
+        <div class="card-label">Flights</div>
+      </div>
+      <div class="card" onclick="showPage('reservations')">
+        <div class="card-num">${resData.length}</div>
+        <div class="card-label">Reservations</div>
+      </div>
+      <div class="card" onclick="showPage('reservations')">
+        <div class="card-num">${confirmed}</div>
+        <div class="card-label">Confirmed</div>
+      </div>
+      <div class="card" onclick="showPage('customers')">
+        <div class="card-num">${(cust.data||[]).length}</div>
+        <div class="card-label">Customers</div>
+      </div>
+      <div class="card" onclick="showPage('passengers')">
+        <div class="card-num">${(pass.data||[]).length}</div>
+        <div class="card-label">Passengers</div>
+      </div>
+    `;
+    // Recent reservations
+    const recent = resData.slice(0,8);
+    document.getElementById('dash-res').innerHTML = recent.length ? tableWrap(`
+      <table>
+        <thead><tr><th>ID</th><th>Customer</th><th>Email</th><th>Booked</th><th>Tickets</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>${recent.map(r=>`
+          <tr>
+            <td>${r.reservation_id}</td>
+            <td>${r.first_name} ${r.last_name}</td>
+            <td>${r.email}</td>
+            <td>${fmtDateTime(r.booking_date)}</td>
+            <td style="text-align:center">${r.ticket_count||0}</td>
+            <td>${fmtMoney(r.total_amount)}</td>
+            <td>${badge(r.status)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,recent.length) : '<p class="empty">No reservations found</p>';
+  } catch(e) {
+    cards.innerHTML = `<div class="msg msg-error">Could not load dashboard: ${e.message}</div>`;
+  }
+}
+
+// ── FLIGHTS ────────────────────────────────────────────────────────────────
+async function loadFlights() {
+  const el = document.getElementById('flights-result');
+  el.innerHTML = '<div class="loader">Searching</div>';
+  const origin = document.getElementById('fl-origin').value;
+  const dest = document.getElementById('fl-dest').value;
+  const date = document.getElementById('fl-date').value;
+  try {
+    let url = API+'/flights?';
+    if(origin) url += 'origin='+origin+'&';
+    if(dest) url += 'destination='+dest+'&';
+    if(date) url += 'date='+date;
+    const r = await fetch(url);
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>Flight</th><th>Date</th><th>Airline</th><th>From</th><th>To</th><th>Aircraft</th><th>Departs</th><th>Arrives</th><th>Price</th></tr></thead>
+        <tbody>${rows.map(f=>`
+          <tr>
+            <td>${f.flight_no}</td>
+            <td>${fmtDate(f.departure_date)}</td>
+            <td>${f.airline_name}</td>
+            <td>${f.origin_city} (${f.origin_airport||''})</td>
+            <td>${f.dest_city} (${f.destination_airport||''})</td>
+            <td style="font-size:0.78rem">${f.aircraft_type}</td>
+            <td>${fmtDateTime(f.departure_time)}</td>
+            <td>${fmtDateTime(f.arrival_time)}</td>
+            <td><strong>${fmtMoney(f.base_price)}</strong></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No flights found for those filters</p>';
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+function clearFlights() {
+  document.getElementById('fl-origin').value='';
+  document.getElementById('fl-dest').value='';
+  document.getElementById('fl-date').value='';
+  document.getElementById('flights-result').innerHTML='';
+}
+
+// ── RESERVATIONS ───────────────────────────────────────────────────────────
+async function loadReservations() {
+  const el = document.getElementById('res-result');
+  el.innerHTML = '<div class="loader">Loading</div>';
+  const cid = document.getElementById('res-cust').value;
+  const status = document.getElementById('res-status').value;
+  try {
+    let url = API+'/reservations?';
+    if(cid) url += 'customer_id='+cid+'&';
+    if(status) url += 'status='+status;
+    const r = await fetch(url);
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>ID</th><th>Customer</th><th>Email</th><th>Booked</th><th>Tickets</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(r=>`
+          <tr>
+            <td>${r.reservation_id}</td>
+            <td>${r.first_name} ${r.last_name}</td>
+            <td>${r.email}</td>
+            <td>${fmtDateTime(r.booking_date)}</td>
+            <td style="text-align:center">${r.ticket_count||0}</td>
+            <td>${fmtMoney(r.total_amount)}</td>
+            <td>${badge(r.status)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No reservations found</p>';
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+// ── CUSTOMERS ──────────────────────────────────────────────────────────────
+async function loadCustomers() {
+  const el = document.getElementById('cust-result');
+  el.innerHTML = '<div class="loader">Loading</div>';
+  const s = document.getElementById('cust-search').value;
+  try {
+    const r = await fetch(API+'/customers'+(s?'?search='+encodeURIComponent(s):''));
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>City</th><th>State</th></tr></thead>
+        <tbody>${rows.map(c=>`
+          <tr>
+            <td>${c.customer_id}</td>
+            <td>${c.first_name} ${c.last_name}</td>
+            <td>${c.email}</td>
+            <td>${c.phone||'—'}</td>
+            <td>${c.city||'—'}</td>
+            <td>${c.state||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No customers found</p>';
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+// ── PASSENGERS ─────────────────────────────────────────────────────────────
+async function loadPassengers() {
+  const el = document.getElementById('pass-result');
+  el.innerHTML = '<div class="loader">Loading</div>';
+  const s = document.getElementById('pass-search').value;
+  try {
+    const r = await fetch(API+'/passengers'+(s?'?search='+encodeURIComponent(s):''));
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Passport</th><th>Nationality</th></tr></thead>
+        <tbody>${rows.map(p=>`
+          <tr>
+            <td>${p.passenger_id}</td>
+            <td>${p.first_name} ${p.last_name}</td>
+            <td>${p.passport_no||'—'}</td>
+            <td>${p.nationality||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No passengers found</p>';
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+async function loadPassengerHistory() {
+  const pid = document.getElementById('pass-id').value;
+  if(!pid) { showMsg('','',''); alert('Enter a Passenger ID first'); return; }
+  const el = document.getElementById('pass-result');
+  el.innerHTML = '<div class="loader">Loading history</div>';
+  try {
+    const r = await fetch(API+'/passengers/'+pid+'/history');
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = `<h2>Travel History — Passenger ${pid}</h2>` + (rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>Ticket</th><th>Flight</th><th>Date</th><th>Route</th><th>Airline</th><th>Seat</th><th>Class</th><th>Price</th><th>Res. Status</th></tr></thead>
+        <tbody>${rows.map(t=>`
+          <tr>
+            <td>${t.ticket_no}</td>
+            <td>${t.flight_no}</td>
+            <td>${fmtDate(t.departure_date)}</td>
+            <td>${t.from_city} → ${t.to_city}</td>
+            <td>${t.airline_name}</td>
+            <td>${t.seat_no||'—'}</td>
+            <td>${badge(t.seat_class||t.fare_class)}</td>
+            <td>${fmtMoney(t.price)}</td>
+            <td>${badge(t.reservation_status)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No travel history found for this passenger</p>');
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+// ── SEATS ──────────────────────────────────────────────────────────────────
+async function loadSeats() {
+  const fid = document.getElementById('seat-flight-id').value;
+  if(!fid) { alert('Enter a Flight ID'); return; }
+  const el = document.getElementById('seats-result');
+  el.innerHTML = '<div class="loader">Loading seats</div>';
+  try {
+    const r = await fetch(API+'/seats/'+fid);
+    const d = await r.json();
+    const rows = d.data||[];
+    if(!rows.length) { el.innerHTML = '<p class="empty">No seats found for this flight</p>'; return; }
+    document.getElementById('seats-legend').style.display='block';
+    // Seat map
+    const mapHtml = rows.map(s => {
+      const avail = s.availability === 'Available';
+      return `<button class="seat-btn ${avail?'available':'occupied'}" title="${s.seat_no} — ${s.seat_class} — ${s.availability}">
+        ${s.seat_no}
+        <span class="seat-class-label">${s.seat_class.substring(0,3).toUpperCase()}</span>
+      </button>`;
+    }).join('');
+    // Table
+    const tableHtml = tableWrap(`
+      <table>
+        <thead><tr><th>Seat</th><th>Class</th><th>Window</th><th>Aisle</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(s=>`
+          <tr>
+            <td>${s.seat_no}</td>
+            <td>${badge(s.seat_class)}</td>
+            <td>${s.is_window?'✓':'—'}</td>
+            <td>${s.is_aisle?'✓':'—'}</td>
+            <td>${badge(s.availability)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length);
+    el.innerHTML = `<div class="seat-map">${mapHtml}</div>${tableHtml}`;
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+// ── ROUTES ────────────────────────────────────────────────────────────────
+async function loadRoutes() {
+  const el = document.getElementById('routes-result');
+  el.innerHTML = '<div class="loader">Loading</div>';
+  try {
+    const r = await fetch(API+'/reports/routes');
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>Airline</th><th>From</th><th>To</th><th>Flights</th><th>Min Price</th><th>Avg Price</th><th>Max Price</th></tr></thead>
+        <tbody>${rows.map(r=>`
+          <tr>
+            <td>${r.airline_name}</td>
+            <td>${r.from_city} (${r.from_code})</td>
+            <td>${r.to_city} (${r.to_code})</td>
+            <td style="text-align:center">${r.total_flights}</td>
+            <td>${fmtMoney(r.min_price)}</td>
+            <td>${fmtMoney(r.avg_price)}</td>
+            <td>${fmtMoney(r.max_price)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No route data found</p>';
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+// ── TOP FLIGHTS ────────────────────────────────────────────────────────────
+async function loadTopFlights() {
+  const el = document.getElementById('top-result');
+  el.innerHTML = '<div class="loader">Loading</div>';
+  try {
+    const r = await fetch(API+'/reports/top-flights');
+    const d = await r.json();
+    const rows = d.data||[];
+    el.innerHTML = rows.length ? tableWrap(`
+      <table>
+        <thead><tr><th>Rank</th><th>Flight</th><th>Date</th><th>Route</th><th>Airline</th><th>Tickets Sold</th><th>Revenue</th></tr></thead>
+        <tbody>${rows.map((r,i)=>`
+          <tr>
+            <td style="font-family:var(--font-mono);font-weight:600">#${i+1}</td>
+            <td>${r.flight_no}</td>
+            <td>${fmtDate(r.departure_date)}</td>
+            <td>${r.from_city} → ${r.to_city}</td>
+            <td>${r.airline_name}</td>
+            <td style="text-align:center">${r.tickets_sold}</td>
+            <td><strong>${fmtMoney(r.revenue)}</strong></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`,rows.length) : '<p class="empty">No data found</p>';
+  } catch(e) { el.innerHTML = `<div class="msg msg-error">${e.message}</div>`; }
+}
+
+// ── NEW CUSTOMER ───────────────────────────────────────────────────────────
+async function registerCustomer() {
+  const fn = document.getElementById('nc-fn').value.trim();
+  const ln = document.getElementById('nc-ln').value.trim();
+  const email = document.getElementById('nc-email').value.trim();
+  if(!fn||!ln||!email) { showMsg('cust-msg','First name, last name, and email are required.','error'); return; }
+  try {
+    const r = await fetch(API+'/customers', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ first_name:fn, last_name:ln, email,
+        phone: document.getElementById('nc-phone').value||null,
+        date_of_birth: document.getElementById('nc-dob').value||null,
+        street: document.getElementById('nc-street').value||null,
+        city: document.getElementById('nc-city').value||null,
+        state: document.getElementById('nc-state').value||null,
+        zip: document.getElementById('nc-zip').value||null }) });
+    const d = await r.json();
+    if(d.success) { showMsg('cust-msg', `✓ Customer registered. ID: ${d.customer_id}`, 'ok'); clearCustomerForm(); }
+    else showMsg('cust-msg', d.message, 'error');
+  } catch(e) { showMsg('cust-msg', e.message, 'error'); }
+}
+function clearCustomerForm() {
+  ['nc-fn','nc-ln','nc-email','nc-phone','nc-dob','nc-street','nc-city','nc-state','nc-zip'].forEach(id => document.getElementById(id).value='');
+}
+
+// ── NEW RESERVATION ────────────────────────────────────────────────────────
+async function createReservation() {
+  const cid = document.getElementById('nr-cid').value;
+  if(!cid) { showMsg('res-msg','Customer ID is required.','error'); return; }
+  try {
+    const r = await fetch(API+'/reservations', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({customer_id:cid}) });
+    const d = await r.json();
+    if(d.success) showMsg('res-msg', `✓ Reservation created. ID: ${d.reservation_id} — Status: Pending`, 'ok');
+    else showMsg('res-msg', d.message, 'error');
+  } catch(e) { showMsg('res-msg', e.message, 'error'); }
+}
+async function updateReservation() {
+  const rid = document.getElementById('ur-id').value;
+  const status = document.getElementById('ur-status').value;
+  if(!rid) { showMsg('update-res-msg','Reservation ID is required.','error'); return; }
+  try {
+    const r = await fetch(API+'/reservations/'+rid+'/status', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status}) });
+    const d = await r.json();
+    if(d.success) showMsg('update-res-msg', `✓ ${d.message}`, 'ok');
+    else showMsg('update-res-msg', d.message, 'error');
+  } catch(e) { showMsg('update-res-msg', e.message, 'error'); }
+}
+
+// ── ISSUE TICKET ───────────────────────────────────────────────────────────
+async function issueTicket() {
+  const pid = document.getElementById('it-pid').value;
+  const rid = document.getElementById('it-rid').value;
+  const fid = document.getElementById('it-fid').value;
+  const price = document.getElementById('it-price').value;
+  if(!pid||!rid||!fid||!price) { showMsg('ticket-msg','Passenger ID, Reservation ID, Flight ID, and Price are required.','error'); return; }
+  try {
+    const r = await fetch(API+'/tickets', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ passenger_id:pid, reservation_id:rid, flight_id:fid,
+        seat_id: document.getElementById('it-sid').value||null,
+        fare_class: document.getElementById('it-fare').value||null, price }) });
+    const d = await r.json();
+    if(d.success) { showMsg('ticket-msg', `✓ Ticket issued: ${d.ticket_no}`, 'ok'); clearTicketForm(); }
+    else showMsg('ticket-msg', d.message, 'error');
+  } catch(e) { showMsg('ticket-msg', e.message, 'error'); }
+}
+function clearTicketForm() {
+  ['it-pid','it-rid','it-fid','it-sid','it-price'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('it-fare').value='';
+}
+
+// ── PAYMENT ────────────────────────────────────────────────────────────────
+async function processPayment() {
+  const rid = document.getElementById('pp-rid').value;
+  const cid = document.getElementById('pp-cid').value;
+  const amt = document.getElementById('pp-amt').value;
+  if(!rid||!cid||!amt) { showMsg('pay-msg','All fields are required.','error'); return; }
+  try {
+    const r = await fetch(API+'/payments', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reservation_id:rid, card_id:cid, amount:amt}) });
+    const d = await r.json();
+    if(d.success) { showMsg('pay-msg', `✓ ${d.message} — Payment ID: ${d.payment_id}`, 'ok'); clearPaymentForm(); }
+    else showMsg('pay-msg', d.message, 'error');
+  } catch(e) { showMsg('pay-msg', e.message, 'error'); }
+}
+async function updatePayment() {
+  const pid = document.getElementById('up-pid').value;
+  const status = document.getElementById('up-status').value;
+  if(!pid) { showMsg('refund-msg','Payment ID is required.','error'); return; }
+  try {
+    const r = await fetch(API+'/payments/'+pid+'/status', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status}) });
+    const d = await r.json();
+    if(d.success) showMsg('refund-msg', `✓ ${d.message}`, 'ok');
+    else showMsg('refund-msg', d.message, 'error');
+  } catch(e) { showMsg('refund-msg', e.message, 'error'); }
+}
+function clearPaymentForm() {
+  ['pp-rid','pp-cid','pp-amt','up-pid'].forEach(id => document.getElementById(id).value='');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+checkHealth();
+loadAirports();
+loadDashboard();
+</script>
+</body>
+</html>
