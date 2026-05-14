@@ -1,5 +1,5 @@
 # SkyRoute — Enterprise Database Web Application
-**CS431 Database Architecture | Ruba Hagog**
+**CS431 Database Architecture | Ruba Hagog, Benjamin Chang**
 
 ---
 
