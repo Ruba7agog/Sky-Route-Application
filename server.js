@@ -13,7 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '',       // update with your MySQL password
+  password: 'RiRi_Snowy<31301',       // update with your MySQL password
   database: 'skyroute',
   waitForConnections: true,
   connectionLimit: 10
@@ -46,8 +46,8 @@ app.get('/api/flights', async (req, res) => {
     let sql = `
       SELECT f.flight_id, f.flight_no, f.departure_date,
              a.airline_name, a.airline_code,
-             orig.airport_name AS origin_name, orig.city AS origin_city,
-             dest.airport_name AS dest_name, dest.city AS dest_city,
+             orig.airport_name AS origin_name, orig.city AS origin_city, orig.airport_code AS origin_airport,
+             dest.airport_name AS dest_name, dest.city AS dest_city, dest.airport_code AS destination_airport,
              ac.aircraft_type,
              f.departure_time, f.arrival_time, f.base_price
       FROM Flight f
@@ -300,6 +300,27 @@ app.post('/api/customers', async (req, res) => {
       [first_name, last_name, email, phone || null, street || null, city || null, state || null, zip || null, date_of_birth || null]
     );
     res.json({ success: true, customer_id: result.insertId, message: 'Customer registered' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// INSERT: New passenger
+app.post('/api/passengers', async (req, res) => {
+  try {
+    const { first_name, last_name, date_of_birth, passport_no, nationality } = req.body;
+    if (!first_name || !last_name || !date_of_birth) {
+      return res.status(400).json({ success: false, message: 'first_name, last_name, date_of_birth required' });
+    }
+    if (passport_no) {
+      const existing = await query('SELECT passenger_id FROM Passenger WHERE passport_no = ?', [passport_no]);
+      if (existing.length > 0) return res.status(400).json({ success: false, message: 'Passport number already registered' });
+    }
+    const result = await query(
+      `INSERT INTO Passenger (first_name, last_name, date_of_birth, passport_no, nationality) VALUES (?, ?, ?, ?, ?)`,
+      [first_name, last_name, date_of_birth, passport_no || null, nationality || null]
+    );
+    res.json({ success: true, passenger_id: result.insertId, message: 'Passenger registered' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
